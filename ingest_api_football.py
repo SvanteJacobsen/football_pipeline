@@ -9,8 +9,9 @@ from azure.storage.blob import BlobServiceClient, ContentSettings
 
 
 BASE_URL = "https://v3.football.api-sports.io"
-LEAGUE_ID = 39          # Premier League
-SEASON = 2024           # 2024/25 season is represented by 2024
+COUNTRY = "Sweden"
+LEAGUE_NAME = "Allsvenskan"
+SEASON = 2024  # keep the season that works for your plan right now
 RAW_DIR = Path("raw")
 
 
@@ -24,22 +25,36 @@ def ensure_dir(path: Path) -> None:
 
 def fetch_api_football(endpoint: str, params: dict, api_key: str) -> dict:
     url = f"{BASE_URL}/{endpoint}"
-    headers = {
-        "x-apisports-key": api_key
-    }
+    headers = {"x-apisports-key": api_key}
 
     response = requests.get(url, headers=headers, params=params, timeout=60)
-
-    # Raise a clear error if HTTP itself fails
     response.raise_for_status()
 
     payload = response.json()
 
-    # API-Football often returns an "errors" field even when HTTP is 200
     if payload.get("errors"):
-        raise RuntimeError(f"API-Football returned errors for {endpoint}: {payload['errors']}")
+        raise RuntimeError(
+            f"API-Football returned errors for {endpoint}: {payload['errors']}"
+        )
 
     return payload
+
+
+def get_league_id(api_key: str) -> int:
+    data = fetch_api_football(
+        "leagues",
+        {"country": COUNTRY, "season": SEASON},
+        api_key,
+    )
+
+    for item in data.get("response", []):
+        league = item.get("league", {})
+        if league.get("name", "").lower() == LEAGUE_NAME.lower():
+            return league["id"]
+
+    raise RuntimeError(
+        f"Could not find {LEAGUE_NAME} in {COUNTRY} for season {SEASON}."
+    )
 
 
 def save_raw_json(data: dict, subfolder: str, name: str) -> Path:
@@ -55,11 +70,15 @@ def save_raw_json(data: dict, subfolder: str, name: str) -> Path:
     return filepath
 
 
-def upload_to_azure(local_path: Path, container_name: str, connection_string: str, blob_path: str) -> None:
+def upload_to_azure(
+    local_path: Path,
+    container_name: str,
+    connection_string: str,
+    blob_path: str,
+) -> None:
     blob_service_client = BlobServiceClient.from_connection_string(connection_string)
     container_client = blob_service_client.get_container_client(container_name)
 
-    # Create container if it does not exist yet
     try:
         container_client.create_container()
     except Exception:
@@ -71,7 +90,7 @@ def upload_to_azure(local_path: Path, container_name: str, connection_string: st
         blob_client.upload_blob(
             data,
             overwrite=True,
-            content_settings=ContentSettings(content_type="application/json")
+            content_settings=ContentSettings(content_type="application/json"),
         )
 
 
@@ -87,22 +106,25 @@ def main() -> None:
     if not azure_conn_str:
         raise ValueError("Missing AZURE_STORAGE_CONNECTION_STRING in .env")
 
+    league_id = get_league_id(api_key)
+    print(f"Using league id {league_id} for {LEAGUE_NAME}")
+
     jobs = [
         {
             "endpoint": "standings",
-            "params": {"league": LEAGUE_ID, "season": SEASON},
+            "params": {"league": league_id, "season": SEASON},
             "subfolder": "standings",
-            "name": f"standings_league_{LEAGUE_ID}_season_{SEASON}",
+            "name": f"standings_{LEAGUE_NAME.lower().replace(' ', '_')}_season_{SEASON}",
         },
         {
             "endpoint": "fixtures",
             "params": {
-                "league": LEAGUE_ID,
+                "league": league_id,
                 "season": SEASON,
-                "status": "FT-AET-PEN"
+                "status": "FT-AET-PEN",
             },
             "subfolder": "fixtures_completed",
-            "name": f"fixtures_completed_league_{LEAGUE_ID}_season_{SEASON}",
+            "name": f"fixtures_completed_{LEAGUE_NAME.lower().replace(' ', '_')}_season_{SEASON}",
         },
     ]
 
