@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg_standings
+    description: Staging model for standings data.
+    columns:
+      - name: team_id
+        description: Team identifier.
+        tests:
+          - not_null
+
+  - name: stg_fixtures
+    description: Staging model for fixtures data.
+    columns:
+      - name: fixture_id
+        description: Fixture identifier.
+        tests:
+          - not_null
+
+  - name: mart_team_performance
+    description: Gold-layer team performance summary.
+    columns:
+      - name: team_id
+        description: Team identifier.
+        tests:
+          - not_null
+
+      - name: team_name
+        description: Team name.
+        tests:
+          - not_null
+
+  - name: mart_match_prediction
+    description: Heuristic match prediction model based on team performance, form and home advantage.
+    columns:
+      - name: fixture_id
+        description: Unique fixture identifier.
+        tests:
+          - not_null
+          - unique
+
+      - name: home_team_id
+        description: Home team identifier.
+        tests:
+          - not_null
+
+      - name: away_team_id
+        description: Away team identifier.
+        tests:
+          - not_null
+
+      - name: home_win_index
+        description: Calculated home win index (0-100).
+        tests:
+          - not_null
+
+      - name: draw_index
+        description: Calculated draw index (0-100).
+        tests:
+          - not_null
+
+      - name: away_win_index
+        description: Calculated away win index (0-100).
+        tests:
+          - not_null
+
+      - name: suggested_pick
+        description: Suggested outcome based on highest index value.
+        tests:
+          - not_null

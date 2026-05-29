@@ -1,0 +1,31 @@
+# Project name and version
+name: 'football_pipeline_dbt'
+version: '1.0.0'
+
+# dbt profile to use from ~/.dbt/profiles.yml
+profile: 'football_pipeline_dbt'
+
+# Project folder structure
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Folders removed when running dbt clean
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Model materialization strategy
+models:
+  football_pipeline_dbt:
+
+    # Silver layer (cleaned / standardized data)
+    staging:
+      +materialized: view
+
+    # Gold layer (analytics-ready business models)
+    marts:
+      +materialized: table
