@@ -27,7 +27,7 @@ dbt transformations
         ↓
 Analytics mart
         ↓
-Visualization / Dashboard
+Streamlit Visualization
 ```
 
 ---
@@ -40,6 +40,7 @@ Visualization / Dashboard
 * Snowflake Tasks
 * dbt
 * Python
+* Streamlit
 * REST API (API-Football)
 
 ---
@@ -65,7 +66,7 @@ https://www.api-football.com/
 Current implementation uses:
 
 * Allsvenskan
-* Season 2025
+* Season 2026
 
 The pipeline is parameterized and can easily be updated to future seasons.
 
@@ -103,7 +104,6 @@ Snowflake Tasks automatically load new raw JSON snapshots into Snowflake RAW tab
 
 # Future Improvements
 
-* Live season ingestion
 * Advanced football analytics
 * Predictive models
 * Match outcome probabilities
